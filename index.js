@@ -1,6 +1,6 @@
 var http = require('http');
 const fs = require('fs');
-let rawdata = fs.readFileSync('config.json');
+let rawdata = fs.readFileSync('./config.json');
 
 http.createServer(function (req, res) {
     console.log(`Just got a request at ${req.url}!`)
