@@ -26,7 +26,7 @@ http
         secret: 'fnAFCDv6dmAAzPS1JG9-TrDSx3Do3M5Q0gOMhScV',
         endpoint: 'https://dashboard.fauna.com/'
       })
-      q.Create(
+      client.Create(
         q.Collection('ChiudiLaPorta'),
         { data: { testField: 'testValue' } }
       )
