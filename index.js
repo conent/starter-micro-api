@@ -2,7 +2,7 @@ const app = require('express')();
 
 const faunadb = require('faunadb');
 const q = faunadb.query
-const client = new faunadb.Client({ secret: 'fnAFCDv6dmAAzPS1JG9-TrDSx3Do3M5Q0gOMhScV' })
+const client = new faunadb.Client({ secret: process.env.FAUNADB })
 
 const {
     Ref,
@@ -29,7 +29,7 @@ app.get('/config/:id', async (req, res) => {
         )
     )
 
-    res.send(doc)
+    res.send(doc.data)
 
 });
 
