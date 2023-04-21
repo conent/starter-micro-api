@@ -1,41 +1,105 @@
-var http = require('http');
-const fs = require('fs');
+const app = require('express')();
 
-// Read the config file
-let rawdata = fs.readFileSync('./config.json');
+const faunadb = require('faunadb');
+const client = new faunadb.Client({ secret: 'fnAFCDv6dmAAzPS1JG9-TrDSx3Do3M5Q0gOMhScV' })
 
-var faunaDb = require('faunadb')
-var fQuery = faunaDb.query
+const {
+    Ref,
+    Paginate,
+    Get,
+    Match,
+    Index,
+    Create,
+    Collection,
+    Join,
+    Call,
+    Function: Fn,
+} = faunadb.query;
 
-http
-  .createServer(function (req, res) {
-    var url = req.url;
 
-    var url = req.url;
-    if(url ==='/about'){
-        console.log (req.url)
-        res.setHeader('Content-Type', 'text/html');
-        res.write("hey"); //write a response
-        res.end(); //end the response
+app.get('/config/:id', async (req, res) => {
+
+    const doc = await client.query(
+        Get(
+            Ref(
+                Collection('configs'),
+                req.params.id
+            )
+        )
+    )
+
+    res.send(doc)
+
+});
+
+app.post('/tweet', async (req, res) => {
+
+    const data = {
+        // Original code extracted to Fauna Function
+        // Select('ref', Get(Match(Index('users_by_name'), 'fireship_dev')))
+        user: Call(Fn("getUser"), 'fireship_dev'),
+        text: 'Hola Mundo!'
     }
-    else if(url ==='/config'){
-      res.setHeader('Content-Type', 'application/json');
-      res.end(rawdata);
-    } else if(url ==='testFauna'){
-      var client = new faunaDb.Client({ 
-        secret: 'fnAFCDv6dmAAzPS1JG9-TrDSx3Do3M5Q0gOMhScV',
-        endpoint: 'https://dashboard.fauna.com/'
-      })
-      client.Create(
-        q.Collection('ChiudiLaPorta'),
-        { data: { testField: 'testValue' } }
-      )
-      .then(function (res) { console.log('Result:', res) })
-      .catch(function (err) { console.log('Error:', err) })
-    } else{
-      res.setHeader('Content-Type', 'text/html');
-      res.write('<h1>Hello World!<h1>'); //write a response
-      res.end(); //end the response
+
+    const doc = await client.query(
+        Create(
+            Collection('tweets'),
+            { data }
+        )
+    )
+
+    res.send(doc)
+});
+
+
+app.get('/tweet', async (req, res) => {
+    const docs = await client.query(
+        Paginate(
+            Match(
+                Index('tweets_by_user'),
+                Call(Fn("getUser"), 'fireship_dev')
+            )
+        )
+    )
+
+    res.send(docs)
+});
+
+
+app.post('/relationship', async (req, res) => {
+
+
+    const data = {
+        follower: Call(Fn("getUser"), 'bob'),
+        followee: Call(Fn("getUser"), 'fireship_dev')
     }
-  })
-  .listen(process.env.PORT || 3000);
+    const doc = await client.query(
+        Create(
+            Collection('relationships'),
+            { data }
+        )
+    )
+
+    res.send(doc)
+});
+
+
+
+app.get('/feed', async (req, res) => {
+    const docs = await client.query(
+        Paginate(
+            Join(
+                Match(
+                    Index('followees_by_follower'),
+                    Call(Fn("getUser"), 'bob')
+                ),
+                Index('tweets_by_user'),
+            )
+        )
+    )
+
+    res.send(docs)
+});
+
+
+app.listen(process.env.PORT || 3000, () => console.log('API on http://localhost:5000'))
