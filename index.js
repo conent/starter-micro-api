@@ -1,6 +1,7 @@
 const app = require('express')();
 
 const faunadb = require('faunadb');
+const q = faunadb.query
 const client = new faunadb.Client({ secret: 'fnAFCDv6dmAAzPS1JG9-TrDSx3Do3M5Q0gOMhScV' })
 
 const {
@@ -22,7 +23,7 @@ app.get('/config/:id', async (req, res) => {
     const doc = await client.query(
         Get(
             Ref(
-                Collection('configs'),
+                Collection('Settings'),
                 req.params.id
             )
         )
@@ -32,18 +33,17 @@ app.get('/config/:id', async (req, res) => {
 
 });
 
-app.post('/tweet', async (req, res) => {
+app.post('/config', async (req, res) => {
 
     const data = {
         // Original code extracted to Fauna Function
         // Select('ref', Get(Match(Index('users_by_name'), 'fireship_dev')))
-        user: Call(Fn("getUser"), 'fireship_dev'),
-        text: 'Hola Mundo!'
+        itemName: 'Hola Mundo!'
     }
 
     const doc = await client.query(
         Create(
-            Collection('tweets'),
+            Collection('Settings'),
             { data }
         )
     )
@@ -55,52 +55,13 @@ app.post('/tweet', async (req, res) => {
 app.get('/tweet', async (req, res) => {
     const docs = await client.query(
         Paginate(
-            Match(
-                Index('tweets_by_user'),
-                Call(Fn("getUser"), 'fireship_dev')
-            )
+          q.Documents(q.Collection('Settings'))),
+          q.Lambda(x => q.Get(x)
         )
     )
 
     res.send(docs)
 });
 
-
-app.post('/relationship', async (req, res) => {
-
-
-    const data = {
-        follower: Call(Fn("getUser"), 'bob'),
-        followee: Call(Fn("getUser"), 'fireship_dev')
-    }
-    const doc = await client.query(
-        Create(
-            Collection('relationships'),
-            { data }
-        )
-    )
-
-    res.send(doc)
-});
-
-
-
-app.get('/feed', async (req, res) => {
-    const docs = await client.query(
-        Paginate(
-            Join(
-                Match(
-                    Index('followees_by_follower'),
-                    Call(Fn("getUser"), 'bob')
-                ),
-                Index('tweets_by_user'),
-            )
-        )
-    )
-
-    res.send(docs)
-});
-
-
-app.listen(process.env.PORT || 3000, () => console.log('API on http://localhost:5000'))
+app.listen(process.env.PORT || 3030, () => console.log('API on http://localhost:3030'))
 
